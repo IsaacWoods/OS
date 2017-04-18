@@ -1,32 +1,47 @@
-TARGET=i686-elf
-CC=$(TARGET)-gcc
-LINKER=$(TARGET)-gcc
-CFLAGS=-ffreestanding -O2 -Wall -Wextra -std=gnu11
+export TARGET=i686-elf
+export SYSROOT=$(shell readlink -f sysroot)
+export PREFIX=/usr
+export INCLUDE_DIR=$(PREFIX)/include
+
+export CC=$(TARGET)-gcc
+export LINKER=$(TARGET)-gcc
+export AR=$(TARGET)-ar
+export CFLAGS=-ffreestanding -O2 -Wall -Wextra -std=gnu11 --sysroot=$(SYSROOT) -isystem=$(INCLUDE_DIR)
+export LFLAGS=-ffreestanding -O2 -nostdlib -lgcc --sysroot=$(SYSROOT)
 
 OBJS=\
-	src/boot.o\
-	src/main.o\
+	kernel/i686/boot.o\
+	kernel/i686/tty.o\
+	kernel/i686/crti.o\
+	kernel/i686/crtn.o\
+	kernel/main.o\
 
-.PHONY: iso clean qemu
+.PHONY: iso sysroot stdlib clean qemu
 .default: iso
 
 iso: os.kernel
 	mkdir -p isodir/boot/grub
 	cp grub.cfg isodir/boot/grub
-	cp os.kernel isodir/boot/os.kernel
+	cp $(SYSROOT)/os.kernel isodir/boot/os.kernel
 	grub-mkrescue -o os.iso isodir
 
-os.kernel: $(OBJS)
-	$(LINKER) -T linker.ld -o $@ -ffreestanding -O2 -nostdlib $^ -lgcc
+os.kernel: sysroot stdlib
+	make -Ckernel os.kernel
 
-%.o: %.c
-	$(CC) -c $< -o $@ $(CFLAGS)
+sysroot:
+	mkdir -p $(SYSROOT)$(INCLUDE_DIR)
+	make -Ckernel sysroot
+	make -Clibc sysroot
 
-%.o: %.s
-	nasm -felf32 -o $@ $<
+stdlib: sysroot
+	mkdir -p $(SYSROOT)$(PREFIX)/lib
+	make -Clibc libc.a
+	make -Clibc libk.a
 
 clean:
-	rm -f os.kernel $(OBJS)
+	rm -rf $(SYSROOT) isodir os.iso
+	make -Ckernel clean
+	make -Clibc clean
 
 qemu:
 	qemu-system-i386 -cdrom os.iso

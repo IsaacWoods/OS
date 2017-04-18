@@ -18,10 +18,14 @@ stack_top:
 
 section .text
 global _start:function (_start.end - _start)
+
+extern _init
 extern kmain
 
 _start:
   mov esp, stack_top
+
+  call _init
   call kmain
 
   cli
