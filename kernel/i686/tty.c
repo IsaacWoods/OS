@@ -49,16 +49,29 @@ void WriteToTTY(const char* str, size_t length)
        i++)
   {
     unsigned char c = (unsigned char)str[i];
-    PutVGAEntry(ttyColumn, ttyRow, c, ttyColor);
 
-    if (++ttyColumn == WIDTH)
+    switch (c)
     {
-      ttyColumn = 0u;
-      
-      if (++ttyRow == HEIGHT)
+      case '\n':
       {
-        ttyRow = 0u;
-      }
+        ttyRow++;
+        ttyColumn = 0u;
+      } break;
+
+      default:
+      {
+        PutVGAEntry(ttyColumn, ttyRow, c, ttyColor);
+
+        if (++ttyColumn == WIDTH)
+        {
+          ttyColumn = 0u;  
+          if (++ttyRow == HEIGHT)
+          {
+            ttyRow = 0u;
+          }
+        }
+      } break;
     }
+
   }
 }

@@ -9,4 +9,5 @@ void kmain(void)
 {
   InitializeTerminal();
   printf("Hello, World!\n");
+  printf("Second line\n");
 }
