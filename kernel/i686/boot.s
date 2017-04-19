@@ -26,6 +26,9 @@ _start:
   mov esp, stack_top
 
   call _init
+
+  push ebx
+  push eax
   call kmain
 
   cli

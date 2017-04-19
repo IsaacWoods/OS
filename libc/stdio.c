@@ -28,11 +28,8 @@ char putchar(char c)
   return c;
 }
 
-int printf(const char* __restrict fmt, ...)
+int vprintf(const char* __restrict fmt, va_list args)
 {
-  va_list args;
-  va_start(args, fmt);
-
   char buffer[1024u] = {};
   size_t bufferLength = 0u;
   bool confused = false;
@@ -151,6 +148,14 @@ int printf(const char* __restrict fmt, ...)
   // TODO(Isaac): call the write systemcall
 #endif
 
-  va_end(args);
   return bufferLength;
+}
+
+int printf(const char* __restrict fmt, ...)
+{
+  va_list args;
+  va_start(args, fmt);
+  int result = vprintf(fmt, args);
+  va_end(args);
+  return result;
 }

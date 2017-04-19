@@ -1,6 +1,7 @@
 OBJS=\
 	i686/boot.o\
 	i686/tty.o\
+	i686/platform.o\
 	i686/crti.o\
 	i686/crtn.o\
 	i686/crtbegin.o\
