@@ -26,6 +26,8 @@ char* itoa(int value, char* buffer, int base)
     buffer[j] = buffer[i];
     buffer[i] = temp;
   }
+
+  return buffer;
 }
 
 int memcmp(const void* aPtr, const void* bPtr, size_t length)

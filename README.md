@@ -11,5 +11,6 @@ If `grub-mkrescue` complains, try running `sudo apt install xorriso grub-pi-bin`
 
 # Warning
 **Building the ISO yourself is fine**
+
 Distributing the resultant `.iso` infringes the GPL, because `grub-mkrescue` includes code from GRUB. You either
 can't distribute the ISO or have to also distribute the entire GRUB source.

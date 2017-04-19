@@ -9,5 +9,6 @@ void kmain(void)
 {
   InitializeTerminal();
   printf("Hello, World!\n");
-  printf("Second line\n");
+  printf("Ohh fancy: %u\n", 42);
+  printf("Hexxxx: %x\n", 0xBADBEEF);
 }

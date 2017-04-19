@@ -1,4 +1,6 @@
+sysroot
 *.o
+*.a
+*.kernel
 *.iso
-os.kernel
 *.swp
