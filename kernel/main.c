@@ -10,6 +10,7 @@
 void kmain(uint32_t magic, struct multiboot_info* bootInfo)
 {
   InitializeTerminal();
+  InitPlatform();
 
   if (magic != MULTIBOOT_BOOTLOADER_MAGIC)
   {
@@ -17,7 +18,4 @@ void kmain(uint32_t magic, struct multiboot_info* bootInfo)
   }
 
   printf("Hello, World!\n");
-  printf("Ohh fancy: %u\n", 42);
-  printf("Hexxxx: %x\n", 0xBADBEEF);
-  printf("Strang: %s\n", "My name is Isaac");
 }

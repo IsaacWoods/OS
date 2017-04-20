@@ -11,3 +11,5 @@ void Internal_KernelPanic(const char* file, int line, const char* message, ...);
  * this to allow the case where it's just the message.
  */
 #define KERNEL_PANIC(...) Internal_KernelPanic(__FILE__, __LINE__, __VA_ARGS__);
+
+void InitPlatform();

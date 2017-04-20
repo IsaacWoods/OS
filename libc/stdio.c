@@ -4,6 +4,7 @@
 
 #include <stdio.h>
 #include <stdbool.h>
+#include <stdint.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdarg.h>
@@ -108,13 +109,13 @@ int vprintf(const char* __restrict fmt, va_list args)
       case 'b':
       {
         fmt++;
-        int value = va_arg(args, int);
+        uint64_t value = va_arg(args, uint64_t);
 
         /*
-         * NOTE(Isaac): In binary, the longest would be 32 1s (or 0s tbf), so we need 32 characters
+         * NOTE(Isaac): In binary, the longest would be 64 1s (or 0s tbf), so we need 32 characters
          */
-        char valueBuffer[32u];
-        itoa(value, valueBuffer, 2);
+        char valueBuffer[64u];
+        itoaLong(value, valueBuffer, 2);
 
         EMIT("0b");
         EMIT(valueBuffer);
@@ -124,13 +125,13 @@ int vprintf(const char* __restrict fmt, va_list args)
       case 'X':
       {
         fmt++;
-        int value = va_arg(args, int);
+        uint64_t value = va_arg(args, uint64_t);
 
         /*
          * NOTE(Isaac): In hex, the longest value an int can take is `-7FFFFFFF` so we need 9 characters
          */
-        char valueBuffer[9u];
-        itoa(value, valueBuffer, 16);
+        char valueBuffer[64u];
+        itoaLong(value, valueBuffer, 16);
         EMIT("0x");
         EMIT(valueBuffer);
       } break;

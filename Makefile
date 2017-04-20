@@ -6,8 +6,8 @@ export INCLUDE_DIR=$(PREFIX)/include
 export CC=$(TARGET)-gcc
 export LINKER=$(TARGET)-gcc
 export AR=$(TARGET)-ar
-export CFLAGS=-ffreestanding -O2 -Wall -Wextra -std=gnu11 --sysroot=$(SYSROOT) -isystem=$(INCLUDE_DIR)
-export LFLAGS=-ffreestanding -O2 -nostdlib -lgcc --sysroot=$(SYSROOT)
+export CFLAGS=-ffreestanding -g -O2 -Wall -Wextra -std=gnu11 --sysroot=$(SYSROOT) -isystem=$(INCLUDE_DIR)
+export LFLAGS=-ffreestanding -g -O2 -nostdlib --sysroot=$(SYSROOT)
 
 OBJS=\
 	kernel/i686/boot.o\
@@ -16,7 +16,7 @@ OBJS=\
 	kernel/i686/crtn.o\
 	kernel/main.o\
 
-.PHONY: iso sysroot stdlib clean qemu
+.PHONY: iso sysroot stdlib clean qemu debug
 .default: iso
 
 iso: os.kernel
@@ -45,3 +45,7 @@ clean:
 
 qemu:
 	qemu-system-i386 -cdrom os.iso
+
+debug:
+	@echo "Connect with (gdb)target remote localhost:1234 and then (gdb)continue"
+	qemu-system-i386 -s -cdrom os.iso

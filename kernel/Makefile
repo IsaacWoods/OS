@@ -2,6 +2,7 @@ OBJS=\
 	i686/boot.o\
 	i686/tty.o\
 	i686/platform.o\
+	i686/stuff.o\
 	i686/crti.o\
 	i686/crtn.o\
 	i686/crtbegin.o\
@@ -15,7 +16,7 @@ sysroot:
 	cp -r --preserve=timestamps include/* $(SYSROOT)$(INCLUDE_DIR)/kernel
 
 os.kernel: $(OBJS) sysroot
-	$(LINKER) -T linker.ld -o $@ $(OBJS) $(LFLAGS) -lk
+	$(LINKER) -T linker.ld -o $@ $(OBJS) $(LFLAGS) -lk -lgcc
 	grub-file --is-x86-multiboot $@
 	cp --preserve=timestamps os.kernel $(SYSROOT)/os.kernel
 
