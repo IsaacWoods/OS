@@ -18,4 +18,5 @@ void kmain(uint32_t magic, struct multiboot_info* bootInfo)
   }
 
   printf("Hello, World!\n");
+//  asm volatile("int $0x3");
 }
