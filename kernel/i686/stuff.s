@@ -45,6 +45,17 @@ FlushIDT:
     jmp IsrStub
 %endmacro
 
+; First param   - ISR mapping
+; Second param  - IRQ number
+%macro IRQ 2
+  global irq%2
+  irq%2:
+    cli
+    push byte 0
+    push byte %1
+    jmp IrqStub
+%endmacro
+
 ISR_NOERR 0
 ISR_NOERR 1
 ISR_NOERR 2
@@ -77,9 +88,24 @@ ISR_NOERR 28
 ISR_NOERR 29
 ISR_NOERR 30
 ISR_NOERR 31
+IRQ       32, 0
+IRQ       33, 1
+IRQ       34, 2
+IRQ       35, 3
+IRQ       36, 4
+IRQ       37, 5
+IRQ       38, 6
+IRQ       39, 7
+IRQ       40, 8
+IRQ       41, 9
+IRQ       42, 10
+IRQ       43, 11
+IRQ       44, 12
+IRQ       45, 13
+IRQ       46, 14
+IRQ       47, 15
 
 extern HandleISR
-
 IsrStub:
   ; Preserve registers and the current data segment selector
   pusha
@@ -107,3 +133,28 @@ IsrStub:
   add esp, 8
   sti
   iret
+
+extern HandleIRQ
+IrqStub:
+  pusha
+  mov ax, ds
+  push eax
+
+  mov ax, 0x10
+  mov ds, ax
+  mov es, ax
+  mov fs, ax
+  mov gs, ax
+
+  call HandleIRQ
+
+  pop ebx
+  mov ds, bx
+  mov es, bx
+  mov fs, bx
+  mov gs, bx
+
+  popa
+  add esp, 8
+  sti
+  ret

@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <kernel/i686.h>
 
 __attribute__((__noreturn__))
 void Internal_KernelPanic(const char* file, int line, const char* message, ...)
@@ -19,6 +20,18 @@ void Internal_KernelPanic(const char* file, int line, const char* message, ...)
 
   va_end(args);
   abort();
+}
+
+void outb(uint16_t port, uint8_t value)
+{
+  asm volatile("outb %0, %1" :: "a"(value), "Nd"(port));
+}
+
+uint8_t inb(uint16_t port)
+{
+  uint8_t result;
+  asm volatile("inb %1, %0" : "=a"(result) : "Nd"(port));
+  return result;
 }
 
 // --- GDT and IDT ---
@@ -105,6 +118,22 @@ extern void isr28();
 extern void isr29();
 extern void isr30();
 extern void isr31();
+extern void irq0 ();
+extern void irq1 ();
+extern void irq2 ();
+extern void irq3 ();
+extern void irq4 ();
+extern void irq5 ();
+extern void irq6 ();
+extern void irq7 ();
+extern void irq8 ();
+extern void irq9 ();
+extern void irq10();
+extern void irq11();
+extern void irq12();
+extern void irq13();
+extern void irq14();
+extern void irq15();
 
 extern void FlushGDT(uint32_t);
 extern void FlushIDT(uint32_t);
@@ -138,6 +167,18 @@ void InitPlatform()
                                                SEG_PRIV(3)|SEG_DATA_RDWR);
 
   FlushGDT((uint32_t)&gdtPtr);
+
+  // --- Remap the PIC ---
+  outb(0x20, 0x11);
+  outb(0xA0, 0x11);
+  outb(0x21, 0x20);
+  outb(0xA1, 0x28);
+  outb(0x21, 0x04);
+  outb(0xA1, 0x02);
+  outb(0x21, 0x01);
+  outb(0xA1, 0x01);
+  outb(0x21, 0x00);
+  outb(0xA1, 0x00);
 
   // --- Create the IDT ---
   idtPtr.size = (sizeof(uint64_t) * NUM_IDT_ENTRIES) - 1u;
@@ -176,19 +217,51 @@ void InitPlatform()
   idtEntries[29u] = CreateIDTEntry((uint32_t)isr29, 0x08, 0x8E);
   idtEntries[30u] = CreateIDTEntry((uint32_t)isr30, 0x08, 0x8E);
   idtEntries[31u] = CreateIDTEntry((uint32_t)isr31, 0x08, 0x8E);
+  idtEntries[32u] = CreateIDTEntry((uint32_t)irq0 , 0x08, 0x8E);
+  idtEntries[33u] = CreateIDTEntry((uint32_t)irq1 , 0x08, 0x8E);
+  idtEntries[34u] = CreateIDTEntry((uint32_t)irq2 , 0x08, 0x8E);
+  idtEntries[35u] = CreateIDTEntry((uint32_t)irq3 , 0x08, 0x8E);
+  idtEntries[36u] = CreateIDTEntry((uint32_t)irq4 , 0x08, 0x8E);
+  idtEntries[37u] = CreateIDTEntry((uint32_t)irq5 , 0x08, 0x8E);
+  idtEntries[38u] = CreateIDTEntry((uint32_t)irq6 , 0x08, 0x8E);
+  idtEntries[39u] = CreateIDTEntry((uint32_t)irq7 , 0x08, 0x8E);
+  idtEntries[40u] = CreateIDTEntry((uint32_t)irq8 , 0x08, 0x8E);
+  idtEntries[41u] = CreateIDTEntry((uint32_t)irq9 , 0x08, 0x8E);
+  idtEntries[42u] = CreateIDTEntry((uint32_t)irq10, 0x08, 0x8E);
+  idtEntries[43u] = CreateIDTEntry((uint32_t)irq11, 0x08, 0x8E);
+  idtEntries[44u] = CreateIDTEntry((uint32_t)irq12, 0x08, 0x8E);
+  idtEntries[45u] = CreateIDTEntry((uint32_t)irq13, 0x08, 0x8E);
+  idtEntries[46u] = CreateIDTEntry((uint32_t)irq14, 0x08, 0x8E);
+  idtEntries[47u] = CreateIDTEntry((uint32_t)irq15, 0x08, 0x8E);
 
   FlushIDT((uint32_t)&idtPtr);
 }
 
-struct registers
-{
-  uint32_t ds;                                      // Preserved by the ISR stub
-  uint32_t edi, esi, ebp, esp, ebx, edx, ecx, eax;  // Pushed by pusha
-  uint32_t intNum, errCode;                         // Pushed by the ISR wrapper
-  uint32_t eip, cs, eflags, useresp, ss;            // Automatically pushed by the CPU
-};
-
 void HandleISR(struct registers regs)
 {
   printf("Interrupt: %u\n", regs.intNum);
+}
+
+interrupt_handler_t interruptHandlers[NUM_IDT_ENTRIES];
+void HandleIRQ(struct registers regs)
+{
+  if (regs.intNum >= 40u)
+  {
+    // Send EOI to slave PIC
+    outb(0xA0, 0x20);
+  }
+
+  // Send EOI to master PIC
+  outb(0x20, 0x20);
+
+  if (interruptHandlers[regs.intNum])
+  {
+    interrupt_handler_t handler = interruptHandlers[regs.intNum];
+    handler(regs);
+  }
+}
+
+void RegisterInterruptHandler(uint8_t interruptNum, interrupt_handler_t handler)
+{
+  interruptHandlers[interruptNum] = handler;
 }
