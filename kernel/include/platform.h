@@ -15,6 +15,7 @@ void Internal_KernelPanic(const char* file, int line, const char* message, ...);
 #define KERNEL_PANIC(...) Internal_KernelPanic(__FILE__, __LINE__, __VA_ARGS__);
 
 void InitPlatform();
+void SetTimerFrequency(uint32_t frequency);
 
 void outb(uint16_t port, uint8_t value);
 uint8_t inb(uint16_t port);

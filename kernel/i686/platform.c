@@ -137,6 +137,13 @@ extern void irq15();
 
 extern void FlushGDT(uint32_t);
 extern void FlushIDT(uint32_t);
+
+static void PITHandler(struct registers regs)
+{
+  static unsigned int tick = 0u;
+  printf("PIT fired: %u\n", tick++);
+}
+
 void InitPlatform()
 {
   // --- Create the GDT ---
@@ -235,6 +242,25 @@ void InitPlatform()
   idtEntries[47u] = CreateIDTEntry((uint32_t)irq15, 0x08, 0x8E);
 
   FlushIDT((uint32_t)&idtPtr);
+
+  RegisterInterruptHandler(IRQ0, &PITHandler);
+}
+
+#define USE_PIT
+void SetTimerFrequency(uint32_t frequency)
+{
+#ifdef USE_PIT
+  /*
+   * We need to calculate the number we want the PIT to divide its base frequency (1193180 Hz) by.
+   * This number is weird just because historical reasons.
+   */
+  uint32_t divisor = 1193180u/frequency;
+  outb(0x43, 0x36);   // NOTE(Isaac): 0x36 sets the PIT to repeating mode, and tells it we're sending a divisor
+  outb(0x40, (uint8_t)(divisor&0xFF));
+  outb(0x40, (uint8_t)((divisor>>8u)&0xFF));
+#elif
+  #error "At least one timer must be enabled (i686 platform)!"
+#endif
 }
 
 void HandleISR(struct registers regs)

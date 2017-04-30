@@ -44,33 +44,38 @@ void InitializeTerminal(void)
 
 void WriteToTTY(const char* str, size_t length)
 {
+  // If the screen is full, move everything up one line, leaving a free line at the bottom
+  if (ttyRow >= TTY_HEIGHT)
+  {
+    for (size_t y = 0u;
+         y < TTY_HEIGHT;
+         y++)
+    {
+      for (size_t x = 0u;
+           x < TTY_WIDTH;
+           x++)
+      {
+        ttyBuffer[x+y*TTY_WIDTH] = ttyBuffer[x+(y+1u)*TTY_WIDTH];
+      }
+    }
+    --ttyRow;
+  }
+
   for (size_t i = 0u;
        i < length;
        i++)
   {
     unsigned char c = (unsigned char)str[i];
 
-    switch (c)
+    if (c == '\n' || ttyColumn == TTY_WIDTH)
     {
-      case '\n':
-      {
-        ttyRow++;
-        ttyColumn = 0u;
-      } break;
-
-      default:
-      {
-        PutVGAEntry(ttyColumn, ttyRow, c, ttyColor);
-
-        if (++ttyColumn == TTY_WIDTH)
-        {
-          ttyColumn = 0u;  
-          if (++ttyRow == TTY_HEIGHT)
-          {
-            ttyRow = 0u;
-          }
-        }
-      } break;
+      ++ttyRow;
+      ttyColumn = 0u;
+    }
+    else
+    {
+      PutVGAEntry(ttyColumn, ttyRow, c, ttyColor);
+      ttyColumn++;
     }
   }
 }
