@@ -2,8 +2,8 @@
 ; Copyright (C) 2017, Isaac Woods. All rights reserved.
 ;
 
-global FlushGDT
 ; Inputs: Physical address of GDT to be loaded
+global FlushGDT
 FlushGDT:
   mov eax, [esp+4]
   lgdt [eax]
@@ -21,8 +21,8 @@ FlushGDT:
 .flush:
   ret
 
-global FlushIDT
 ; Inputs: Physical address of IDT to be loaded
+global FlushIDT
 FlushIDT:
   mov eax, [esp+4]
   lidt [eax]

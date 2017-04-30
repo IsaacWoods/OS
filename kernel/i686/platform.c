@@ -243,7 +243,9 @@ void InitPlatform()
 
   FlushIDT((uint32_t)&idtPtr);
 
-  RegisterInterruptHandler(IRQ0, &PITHandler);
+//  RegisterInterruptHandler(IRQ0, &PITHandler);
+
+  asm volatile("sti");
 }
 
 #define USE_PIT
@@ -271,6 +273,7 @@ void HandleISR(struct registers regs)
 interrupt_handler_t interruptHandlers[NUM_IDT_ENTRIES];
 void HandleIRQ(struct registers regs)
 {
+  printf("IRQ\n");
   if (regs.intNum >= 40u)
   {
     // Send EOI to slave PIC

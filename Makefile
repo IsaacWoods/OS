@@ -6,8 +6,8 @@ export INCLUDE_DIR=$(PREFIX)/include
 export CC=$(TARGET)-gcc
 export LINKER=$(TARGET)-gcc
 export AR=$(TARGET)-ar
-export CFLAGS=-ffreestanding -g -O2 -Wall -Wextra -std=gnu11 --sysroot=$(SYSROOT) -isystem=$(INCLUDE_DIR)
-export LFLAGS=-ffreestanding -g -O2 -nostdlib --sysroot=$(SYSROOT)
+export CFLAGS=-ffreestanding -g -O0 -Wall -Wextra -std=gnu11 --sysroot=$(SYSROOT) -isystem=$(INCLUDE_DIR)
+export LFLAGS=-ffreestanding -g -O0 -nostdlib --sysroot=$(SYSROOT)
 
 OBJS=\
 	kernel/i686/boot.o\

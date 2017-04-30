@@ -16,14 +16,9 @@ void kmain(uint32_t magic, struct multiboot_info* bootInfo)
     KERNEL_PANIC("Incorrect bootloader magic: %x\n", magic);
   }
 
+  printf("Hello, World!\n");
   InitPlatform();
 //  SetTimerFrequency(50u);
-//  asm volatile("int $0x3");
-
-  for (unsigned int i = 0u;
-       i <= 1000u;
-       i++)
-  {
-    printf("Thing: %u\n", (1000u-i));
-  }
+  asm volatile("int $0x3");
+  asm volatile("int $0x3");
 }
