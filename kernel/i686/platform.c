@@ -144,6 +144,27 @@ static void PITHandler(struct registers regs)
   printf("PIT fired: %u\n", tick++);
 }
 
+#define PIC_MASTER_COMMAND          0x20
+#define PIC_MASTER_DATA             0x21
+#define PIC_SLAVE_COMMAND           0xA0
+#define PIC_SLAVE_DATA              0xA1
+
+#define PIC_COMMAND_READ_ISR        0x0B
+#define PIC_COMMAND_INIT_ICW1       0x10
+#define PIC_COMMAND_ICW1_ICW4       0x01  // Mark ICW4 as unneeded
+#define PIC_COMMAND_ICW1_SINGLE     0x02  // Single (cascade) mode
+#define PIC_COMMAND_ICW1_INTERVAL4  0x04  // Call address interval 4 (8)
+#define PIC_COMMAND_ICW1_LEVEL      0x08  // Level triggered mode
+#define PIC_COMMAND_ICW4_8086       0x01  // 8086/88 (MCS-80/85) mode
+#define PIC_COMMAND_EOI             0x20
+
+static uint16_t ReadISRFromPIC()
+{
+  outb(PIC_MASTER_COMMAND,  PIC_COMMAND_READ_ISR);
+  outb(PIC_SLAVE_COMMAND,   PIC_COMMAND_READ_ISR);
+  return (inb(PIC_SLAVE_COMMAND) << 8u) | inb(PIC_MASTER_COMMAND);
+}
+
 void InitPlatform()
 {
   // --- Create the GDT ---
@@ -176,16 +197,16 @@ void InitPlatform()
   FlushGDT((uint32_t)&gdtPtr);
 
   // --- Remap the PIC ---
-  outb(0x20, 0x11);
-  outb(0xA0, 0x11);
-  outb(0x21, 0x20);
-  outb(0xA1, 0x28);
-  outb(0x21, 0x04);
-  outb(0xA1, 0x02);
-  outb(0x21, 0x01);
-  outb(0xA1, 0x01);
-  outb(0x21, 0x00);
-  outb(0xA1, 0x00);
+  outb(PIC_MASTER_COMMAND,  PIC_COMMAND_INIT_ICW1+PIC_COMMAND_ICW1_ICW4);
+  outb(PIC_SLAVE_COMMAND,   PIC_COMMAND_INIT_ICW1+PIC_COMMAND_ICW1_ICW4);
+  outb(PIC_MASTER_DATA,     0x20);    // Set the master PIC's vector offset to 32-39
+  outb(PIC_SLAVE_DATA,      0x28);    // Set the slave PIC's vector offset to 40-47
+  outb(PIC_MASTER_DATA,     0x04);    // Tell the master PIC that IRQ2 is a slave
+  outb(PIC_SLAVE_DATA,      0x02);    // Tell the slave PIC its cascade identity
+  outb(PIC_MASTER_DATA,     PIC_COMMAND_ICW4_8086);
+  outb(PIC_SLAVE_DATA,      PIC_COMMAND_ICW4_8086);
+  outb(PIC_MASTER_DATA,     0x0);     // Set the mask of the master to 0
+  outb(PIC_SLAVE_DATA,      0x0);     // Set the mask of the slave to 0
 
   // --- Create the IDT ---
   idtPtr.size = (sizeof(uint64_t) * NUM_IDT_ENTRIES) - 1u;
@@ -243,7 +264,7 @@ void InitPlatform()
 
   FlushIDT((uint32_t)&idtPtr);
 
-//  RegisterInterruptHandler(IRQ0, &PITHandler);
+  RegisterInterruptHandler(IRQ0, &PITHandler);
 
   asm volatile("sti");
 }
@@ -273,20 +294,33 @@ void HandleISR(struct registers regs)
 interrupt_handler_t interruptHandlers[NUM_IDT_ENTRIES];
 void HandleIRQ(struct registers regs)
 {
-  printf("IRQ\n");
-  if (regs.intNum >= 40u)
+  uint32_t irq = regs.intNum - 32u;
+
+  // Handle spurious IRQ7 and IRQ15
+  if (irq == 7u && (ReadISRFromPIC() & (1u << 7u)))
   {
-    // Send EOI to slave PIC
-    outb(0xA0, 0x20);
+    return;
   }
 
-  // Send EOI to master PIC
-  outb(0x20, 0x20);
+  if (irq == 15u && (ReadISRFromPIC() & (1u << 15u)))
+  {
+    outb(PIC_MASTER_COMMAND, PIC_COMMAND_EOI);
+    return;
+  }
 
   if (interruptHandlers[regs.intNum])
   {
     interrupt_handler_t handler = interruptHandlers[regs.intNum];
     handler(regs);
+  }
+
+  // Send the master PIC an EOI
+  outb(PIC_MASTER_COMMAND, PIC_COMMAND_EOI);
+
+  if (regs.intNum >= 40u)
+  {
+    // If IRQ was handled by the slave PIC, also send that an EOI
+    outb(PIC_SLAVE_COMMAND, PIC_COMMAND_EOI);
   }
 }
 

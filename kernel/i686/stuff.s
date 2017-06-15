@@ -157,4 +157,4 @@ IrqStub:
   popa
   add esp, 8
   sti
-  ret
+  iret

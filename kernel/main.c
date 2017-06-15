@@ -20,5 +20,5 @@ void kmain(uint32_t magic, struct multiboot_info* bootInfo)
   InitPlatform();
 //  SetTimerFrequency(50u);
   asm volatile("int $0x3");
-  asm volatile("int $0x3");
+  asm volatile("int $0x4");
 }
