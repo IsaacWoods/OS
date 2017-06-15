@@ -7,6 +7,7 @@
 #include <stdlib.h>
 #include <stdarg.h>
 #include <stdint.h>
+#include <stdbool.h>
 #include <kernel/i686.h>
 
 __attribute__((__noreturn__))
@@ -148,10 +149,35 @@ static void PITHandler(struct registers regs)
 #define PS2_DATA_PORT 0x60
 #define PS2_COMMAND   0x64
 
+struct KeyboardHandlerState
+{
+  bool expectingReleaseScancode;
+};
+
+static struct KeyboardHandlerState g_keyboardState =
+{
+  .expectingReleaseScancode = false
+};
+
 static void KeyHandler(struct registers regs)
 {
   volatile uint8_t scancode = inb(PS2_DATA_PORT);
-  printf("Key event: %x\n", (unsigned int)scancode);
+  
+  if (scancode == 0xF0)
+  {
+    g_keyboardState.expectingReleaseScancode = true;
+    return;
+  }
+
+  if (g_keyboardState.expectingReleaseScancode)
+  {
+//    printf("Key released: %c\n", (unsigned int)g_scancodeTable[scancode]);
+    g_keyboardState.expectingReleaseScancode = false;
+  }
+  else
+  {
+    printf("Key pressed: %c(%x)\n", g_scancodeTable[scancode], (unsigned int)scancode);
+  }
 }
 
 static void InitPS2Controller()
