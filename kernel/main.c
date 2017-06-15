@@ -7,6 +7,7 @@
 #include <kernel/platform.h>
 #include <stdio.h>
 
+__attribute__((noreturn))
 void kmain(uint32_t magic, struct multiboot_info* bootInfo)
 {
   InitializeTerminal();
@@ -17,12 +18,9 @@ void kmain(uint32_t magic, struct multiboot_info* bootInfo)
   }
 
   printf("Hello, World!\n");
+  SetTimerFrequency(1000u);
   InitPlatform();
-  SetTimerFrequency(50u);
-/*  asm volatile("int $0x3");
-  asm volatile("int $0x4");
-  asm volatile("int $0x20");*/
 
-  // Don't return from this, or interrupts will be disabled and we'll hang
+  // We shouldn't return from kmain, or interrupts will be disabled and we'll hang
   while (1) { }
 }

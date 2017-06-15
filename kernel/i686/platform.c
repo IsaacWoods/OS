@@ -140,8 +140,90 @@ extern void FlushIDT(uint32_t);
 
 static void PITHandler(struct registers regs)
 {
-  static unsigned int tick = 0u;
-  printf("PIT fired: %u\n", tick++);
+  (void)regs;
+/*  static unsigned int tick = 0u;
+  printf("PIT fired: %u\n", tick++);*/
+}
+
+#define PS2_DATA_PORT 0x60
+#define PS2_COMMAND   0x64
+
+static void KeyHandler(struct registers regs)
+{
+  volatile uint8_t scancode = inb(PS2_DATA_PORT);
+  printf("Key event: %x\n", (unsigned int)scancode);
+}
+
+static void InitPS2Controller()
+{
+  /*
+   * Bit 0 of the status register must be SET before attempting to read data from port 0x60
+   * Bit 1 of the status register must be CLEAR before attempting to write data to port 0x60
+   */
+  #define WAIT_FOR_READ()   while ((inb(PS2_COMMAND) & 1u) == 0u) asm volatile("rep nop");
+  #define WAIT_FOR_WRITE()  while ((inb(PS2_COMMAND) & 2u) != 0u) asm volatile("rep nop");
+
+  // TODO: We should first check for USB controllers and disable USR Legacy Support
+  // TODO: We should also use ACPI to check the controller actually exists
+ 
+  outb(PS2_COMMAND, 0xAD);    // Disable the device on Channel 1
+  outb(PS2_COMMAND, 0xA7);    // Disable the device on Channel 2 (if it exists)
+
+  (void)inb(PS2_DATA_PORT);   // Flush the output buffer, in case there's data stuck in it
+
+  // Read the Controller Configuration Byte
+  outb(PS2_COMMAND, 0x20);
+  WAIT_FOR_READ();
+  uint8_t configByte = inb(PS2_DATA_PORT);
+
+  // Modify the Controller Configuration Byte and send it back to the 8042
+  configByte &= ~(1u<<0u);    // Disable interrupts from Channel 1 for now
+  configByte &= ~(1u<<1u);    // Disable interrupts from Channel 2
+  configByte &= ~(1u<<6u);    // Disable scancode translation on Channel 1
+
+  outb(PS2_COMMAND, 0x60);
+  WAIT_FOR_WRITE();
+  outb(PS2_DATA_PORT, configByte);
+
+  // Perform the P2/2 controller POST
+  outb(PS2_COMMAND, 0xAA);
+  WAIT_FOR_READ();
+  if (inb(PS2_DATA_PORT) != 0x55)
+  {
+    printf("PS/2 controller POST failed!\n");
+  }
+
+  // TODO: We assume it's a single channel controller from now on - probably check that?
+  // Perform interface tests
+  outb(PS2_COMMAND, 0xAB);
+  WAIT_FOR_READ();
+  if (inb(PS2_DATA_PORT) != 0x00)
+  {
+    printf("PS/2 controller (Channel 1) interface test failed\n");
+  }
+
+  // Enable the devices again and enable their interrupts
+  outb(PS2_COMMAND, 0xAE);
+  outb(PS2_COMMAND, 0x20);
+  WAIT_FOR_READ();
+  configByte = inb(PS2_DATA_PORT);
+  configByte |= (1u<<0u);
+  outb(PS2_COMMAND, 0x60);
+  WAIT_FOR_WRITE();
+  outb(PS2_DATA_PORT, configByte);
+
+  // Send a reset command each active device, and check it succeeds
+  WAIT_FOR_WRITE();
+  outb(PS2_DATA_PORT, 0xFF);
+  WAIT_FOR_READ();
+  /*
+   * TODO: implement a timeout here - the device may also return 0xFC on failure or just
+   * fail to return anything if it doesn't actually exist
+   */
+  if (inb(PS2_DATA_PORT) != 0xFA)
+  {
+    printf("Failed to reset device on PS/2 Channel 1\n");
+  }
 }
 
 #define PIC_MASTER_COMMAND          0x20
@@ -163,6 +245,20 @@ static uint16_t ReadISRFromPIC()
   outb(PIC_MASTER_COMMAND,  PIC_COMMAND_READ_ISR);
   outb(PIC_SLAVE_COMMAND,   PIC_COMMAND_READ_ISR);
   return (inb(PIC_SLAVE_COMMAND) << 8u) | inb(PIC_MASTER_COMMAND);
+}
+
+static void RemapPIC()
+{
+  outb(PIC_MASTER_COMMAND,  PIC_COMMAND_INIT_ICW1+PIC_COMMAND_ICW1_ICW4);
+  outb(PIC_SLAVE_COMMAND,   PIC_COMMAND_INIT_ICW1+PIC_COMMAND_ICW1_ICW4);
+  outb(PIC_MASTER_DATA,     0x20);    // Set the master PIC's vector offset to 32-39
+  outb(PIC_SLAVE_DATA,      0x28);    // Set the slave PIC's vector offset to 40-47
+  outb(PIC_MASTER_DATA,     0x04);    // Tell the master PIC that IRQ2 is a slave
+  outb(PIC_SLAVE_DATA,      0x02);    // Tell the slave PIC its cascade identity
+  outb(PIC_MASTER_DATA,     PIC_COMMAND_ICW4_8086);
+  outb(PIC_SLAVE_DATA,      PIC_COMMAND_ICW4_8086);
+  outb(PIC_MASTER_DATA,     0x0);     // Set the mask of the master to 0
+  outb(PIC_SLAVE_DATA,      0x0);     // Set the mask of the slave to 0
 }
 
 void InitPlatform()
@@ -195,18 +291,7 @@ void InitPlatform()
                                                SEG_PRIV(3)|SEG_DATA_RDWR);
 
   FlushGDT((uint32_t)&gdtPtr);
-
-  // --- Remap the PIC ---
-  outb(PIC_MASTER_COMMAND,  PIC_COMMAND_INIT_ICW1+PIC_COMMAND_ICW1_ICW4);
-  outb(PIC_SLAVE_COMMAND,   PIC_COMMAND_INIT_ICW1+PIC_COMMAND_ICW1_ICW4);
-  outb(PIC_MASTER_DATA,     0x20);    // Set the master PIC's vector offset to 32-39
-  outb(PIC_SLAVE_DATA,      0x28);    // Set the slave PIC's vector offset to 40-47
-  outb(PIC_MASTER_DATA,     0x04);    // Tell the master PIC that IRQ2 is a slave
-  outb(PIC_SLAVE_DATA,      0x02);    // Tell the slave PIC its cascade identity
-  outb(PIC_MASTER_DATA,     PIC_COMMAND_ICW4_8086);
-  outb(PIC_SLAVE_DATA,      PIC_COMMAND_ICW4_8086);
-  outb(PIC_MASTER_DATA,     0x0);     // Set the mask of the master to 0
-  outb(PIC_SLAVE_DATA,      0x0);     // Set the mask of the slave to 0
+  RemapPIC();
 
   // --- Create the IDT ---
   idtPtr.size = (sizeof(uint64_t) * NUM_IDT_ENTRIES) - 1u;
@@ -265,6 +350,9 @@ void InitPlatform()
   FlushIDT((uint32_t)&idtPtr);
 
   RegisterInterruptHandler(IRQ0, &PITHandler);
+
+  InitPS2Controller();
+  RegisterInterruptHandler(IRQ1, &KeyHandler);
 
   asm volatile("sti");
 }
