@@ -18,7 +18,11 @@ void kmain(uint32_t magic, struct multiboot_info* bootInfo)
 
   printf("Hello, World!\n");
   InitPlatform();
-//  SetTimerFrequency(50u);
-  asm volatile("int $0x3");
+  SetTimerFrequency(50u);
+/*  asm volatile("int $0x3");
   asm volatile("int $0x4");
+  asm volatile("int $0x20");*/
+
+  // Don't return from this, or interrupts will be disabled and we'll hang
+  while (1) { }
 }
