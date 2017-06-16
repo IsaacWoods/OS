@@ -8,6 +8,7 @@ OBJS=\
 	i686/crtbegin.o\
 	i686/crtend.o\
 	main.o\
+	keyboard.o\
 
 .PHONY: clean sysroot
 

@@ -15,6 +15,7 @@ OBJS=\
 	kernel/i686/crti.o\
 	kernel/i686/crtn.o\
 	kernel/main.o\
+	kernel/keyboard.o\
 
 .PHONY: iso sysroot stdlib clean qemu debug
 .default: iso

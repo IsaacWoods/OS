@@ -9,6 +9,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 #include <kernel/i686.h>
+#include <kernel/keyboard.h>
 
 __attribute__((__noreturn__))
 void Internal_KernelPanic(const char* file, int line, const char* message, ...)
@@ -169,15 +170,20 @@ static void KeyHandler(struct registers regs)
     return;
   }
 
+  struct KeyEvent event;
+  event.c = g_scancodeTable[scancode];
+
   if (g_keyboardState.expectingReleaseScancode)
   {
-//    printf("Key released: %c\n", (unsigned int)g_scancodeTable[scancode]);
+    event.state = KEY_RELEASED;
     g_keyboardState.expectingReleaseScancode = false;
   }
   else
   {
-    printf("Key pressed: %c(%x)\n", g_scancodeTable[scancode], (unsigned int)scancode);
+    event.state = KEY_PRESSED;
   }
+
+  PushKeyEvent(event);
 }
 
 static void InitPS2Controller()

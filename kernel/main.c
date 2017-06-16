@@ -5,7 +5,9 @@
 #include <kernel/multiboot.h>
 #include <kernel/tty.h>
 #include <kernel/platform.h>
+#include <kernel/keyboard.h>
 #include <stdio.h>
+#include <stdbool.h>
 
 __attribute__((noreturn))
 void kmain(uint32_t magic, struct multiboot_info* bootInfo)
@@ -20,7 +22,19 @@ void kmain(uint32_t magic, struct multiboot_info* bootInfo)
   printf("Hello, World!\n");
   SetTimerFrequency(1000u);
   InitPlatform();
+  InitKeyEventBuffer();
 
-  // We shouldn't return from kmain, or interrupts will be disabled and we'll hang
-  while (1) { }
+  while (true)
+  {
+    struct KeyEvent event;
+
+    if (PopKeyEvent(&event))
+    {
+      printf("Recieved key event: %c\n", event.c);
+    }
+  }
+
+  /*
+   * We shouldn't return from kmain, or interrupts will be disabled and we'll hang
+   */
 }
