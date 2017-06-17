@@ -153,37 +153,94 @@ static void PITHandler(struct registers regs)
 struct KeyboardHandlerState
 {
   bool expectingReleaseScancode;
+  bool shiftPressed;
+  bool ctrlPressed;
+  bool altPressed;
 };
 
 static struct KeyboardHandlerState g_keyboardState =
 {
-  .expectingReleaseScancode = false
+  .expectingReleaseScancode = false,
+  .shiftPressed             = false,
+  .ctrlPressed              = false,
+  .altPressed               = false
 };
 
 static void KeyHandler(struct registers regs)
 {
   volatile uint8_t scancode = inb(PS2_DATA_PORT);
-  
-  if (scancode == 0xF0)
-  {
-    g_keyboardState.expectingReleaseScancode = true;
-    return;
-  }
 
-  struct KeyEvent event;
-  event.c = g_scancodeTable[scancode];
-
-  if (g_keyboardState.expectingReleaseScancode)
+  switch (scancode)
   {
-    event.state = KEY_RELEASED;
-    g_keyboardState.expectingReleaseScancode = false;
-  }
-  else
-  {
-    event.state = KEY_PRESSED;
-  }
+    // Specifies that the next scancode is a released key
+    case 0xF0:
+    {
+      g_keyboardState.expectingReleaseScancode = true;
+    } return;
 
-  PushKeyEvent(event);
+    case 0x12:  // Left shift
+    case 0x59:  // Right shift
+    {
+      if (g_keyboardState.expectingReleaseScancode)
+      {
+        g_keyboardState.shiftPressed = false;
+        g_keyboardState.expectingReleaseScancode = false;
+      }
+      else
+      {
+        g_keyboardState.shiftPressed = true;
+      }
+    } return;
+
+    /*
+     * TODO: Right control is 0xE0,0x14 - we need more logic to detect it
+     */
+    case 0x14:  // Left ctrl
+    {
+      if (g_keyboardState.expectingReleaseScancode)
+      {
+        g_keyboardState.ctrlPressed = false;
+        g_keyboardState.expectingReleaseScancode = false;
+      }
+      else
+      {
+        g_keyboardState.ctrlPressed = true;
+      }
+    } return;
+
+    // TODO: right alt is 0xE0,0x11
+    case 0x11:  // Left alt
+    {
+      if (g_keyboardState.expectingReleaseScancode)
+      {
+        g_keyboardState.altPressed = false;
+        g_keyboardState.expectingReleaseScancode = false;
+      }
+      else
+      {
+        g_keyboardState.altPressed = true;
+      }
+    } return;
+
+    default:
+    {
+      struct KeyEvent event;
+
+      event.c = (g_keyboardState.shiftPressed ? g_scancodeTables[1u][scancode] : g_scancodeTables[0u][scancode]);
+
+      if (g_keyboardState.expectingReleaseScancode)
+      {
+        event.state = KEY_RELEASED;
+        g_keyboardState.expectingReleaseScancode = false;
+      }
+      else
+      {
+        event.state = KEY_PRESSED;
+      }
+
+      PushKeyEvent(event);
+    } return;
+  }
 }
 
 static void InitPS2Controller()

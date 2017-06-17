@@ -6,7 +6,7 @@
 
 #include <stdbool.h>
 
-extern unsigned char g_scancodeTable[];
+extern unsigned char g_scancodeTables[][256u];
 
 enum KeyState
 {

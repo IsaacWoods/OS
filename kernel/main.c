@@ -20,6 +20,7 @@ void kmain(uint32_t magic, struct multiboot_info* bootInfo)
   }
 
   printf("Hello, World!\n");
+  printf("Mem lower: %u\nMem upper: %u\n", bootInfo->mem_lower, bootInfo->mem_upper);
   SetTimerFrequency(1000u);
   InitPlatform();
   InitKeyEventBuffer();
@@ -28,13 +29,13 @@ void kmain(uint32_t magic, struct multiboot_info* bootInfo)
   {
     struct KeyEvent event;
 
-    if (PopKeyEvent(&event))
+    if (PopKeyEvent(&event) && event.state == KEY_PRESSED)
     {
-      printf("Recieved key event: %c\n", event.c);
+      printf("%c", event.c);
     }
   }
 
   /*
-   * We shouldn't return from kmain, or interrupts will be disabled and we'll hang
+   * XXX: We shouldn't return from kmain, or interrupts will be disabled and we'll hang
    */
 }

@@ -3,6 +3,7 @@
  */
 
 #include <kernel/tty.h>
+#include <kernel/i686.h>
 
 #define TTY_WIDTH   80u
 #define TTY_HEIGHT  25u
@@ -72,10 +73,24 @@ void WriteToTTY(const char* str, size_t length)
       ++ttyRow;
       ttyColumn = 0u;
     }
+    else if (c == '\b')
+    {
+      // FIXME: This doesn't work if we're at the start of the line and do a backspace
+      --ttyColumn;
+
+      PutVGAEntry(ttyColumn, ttyRow, ' ', ttyColor);
+    }
     else
     {
       PutVGAEntry(ttyColumn, ttyRow, c, ttyColor);
-      ttyColumn++;
+      ++ttyColumn;
     }
   }
+
+  // Update the cursor's position
+  unsigned short position = (ttyRow*TTY_WIDTH)+ttyColumn;
+  outb(0x3D4, 0x0F);
+  outb(0x3D5, (unsigned char)(position&0xFF));
+  outb(0x3D4, 0x0E);
+  outb(0x3D5, (unsigned char)((position>>8u)&0xFF));
 }
