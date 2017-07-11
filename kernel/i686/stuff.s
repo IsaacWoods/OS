@@ -109,6 +109,10 @@ extern HandleISR
 IsrStub:
   ; Preserve registers and the current data segment selector
   pusha
+  
+  mov eax, cr2
+  push eax
+
   mov ax, ds
   push eax
 
@@ -128,6 +132,9 @@ IsrStub:
   mov fs, ax
   mov gs, ax
 
+  pop eax
+  mov cr2, eax
+
   ; Restore saved registers and clean up the error code
   popa
   add esp, 8
@@ -137,6 +144,10 @@ IsrStub:
 extern HandleIRQ
 IrqStub:
   pusha
+
+  mov eax, cr2
+  push eax
+
   mov ax, ds
   push eax
 
@@ -153,6 +164,9 @@ IrqStub:
   mov es, bx
   mov fs, bx
   mov gs, bx
+
+  pop ebx
+  mov cr2, ebx
 
   popa
   add esp, 8

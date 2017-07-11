@@ -3,57 +3,8 @@
  */
 
 #include <stdlib.h>
+#include <stdbool.h>
 #include <stdio.h>
-
-char* itoa(int value, char* buffer, int base)
-{
-  unsigned long int temp = value;
-  int i = 0;
-
-  do
-  {
-    temp = value % base;
-    buffer[i++] = (temp<10) ? ('0'+temp) : ('a'-10+temp);
-  } while (value /= base);
-
-  buffer[i--] = '\0';
-
-  for (int j = 0;
-       j < i;
-       j++, i--)
-  {
-    temp = buffer[j];
-    buffer[j] = buffer[i];
-    buffer[i] = temp;
-  }
-
-  return buffer;
-}
-
-char* itoaLong(uint64_t value, char* buffer, int base)
-{
-  uint64_t temp = value;
-  uint64_t i = 0u;
-
-  do
-  {
-    temp = value % base;
-    buffer[i++] = (temp<10u) ? ('0'+temp) : ('a'-10u+temp);
-  } while (value /= base);
-
-  buffer[i--] = '\0';
-
-  for (uint64_t j = 0u;
-       j < i;
-       j++, i--)
-  {
-    temp = buffer[j];
-    buffer[j] = buffer[i];
-    buffer[i] = temp;
-  }
-
-  return buffer;
-}
 
 int memcmp(const void* aPtr, const void* bPtr, size_t length)
 {

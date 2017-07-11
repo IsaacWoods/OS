@@ -23,3 +23,8 @@ uint8_t inb(uint16_t port);
 struct registers;
 typedef void (*interrupt_handler_t)(struct registers);
 void RegisterInterruptHandler(uint8_t interruptNum, interrupt_handler_t handler);
+
+/*
+ * The *address* of this variable marks the end of the kernel. It is filled out by the linker. IT HAS NO VALUE.
+ */
+extern uint32_t g_endKernel;

@@ -465,13 +465,22 @@ void SetTimerFrequency(uint32_t frequency)
 
 void HandleISR(struct registers regs)
 {
-  printf("Interrupt: %u\n", regs.intNum);
+  if (regs.intNum == 14u)   // Page fault
+  {
+  printf("Page fault at EIP=%x\n", regs.eip);
+//printf("Page fault at: %x (EIP=%x)\n", regs.cr2, regs.eip);
+  }
+  else
+  {
+    printf("Interrupt: %u\n", regs.intNum);
+  }
 }
 
 interrupt_handler_t interruptHandlers[NUM_IDT_ENTRIES];
 void HandleIRQ(struct registers regs)
 {
   uint32_t irq = regs.intNum - 32u;
+//  printf("IRQ: %x Interrupt num: %d\n", irq, regs.intNum);
 
   // Handle spurious IRQ7 and IRQ15
   if (irq == 7u && (ReadISRFromPIC() & (1u << 7u)))

@@ -7,7 +7,12 @@
 
 #define TTY_WIDTH   80u
 #define TTY_HEIGHT  25u
-#define VGA_MEMORY  ((uint16_t*)0xB8000)
+
+/*
+ * Video memory has the physical address 0xB8000, so is mapped to 0xC00B8000 because the kernel is mapped
+ * from 0x1000 to 0xC0100000
+ */
+#define VGA_MEMORY  ((uint16_t*)0xC00B8000)
 
 static size_t ttyRow, ttyColumn;
 static uint8_t ttyColor;

@@ -39,7 +39,7 @@ static size_t             g_keyEventCount;
 
 void InitKeyEventBuffer()
 {
-  g_keyHead = &g_keyBuffer[0u];
+  g_keyHead = &(g_keyBuffer[0u]);
   g_keyTail = g_keyHead;
   g_keyEventCount = 0u;
 }

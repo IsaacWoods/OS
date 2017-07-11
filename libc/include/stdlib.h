@@ -8,8 +8,6 @@
 #include <stddef.h>
 #include <stdint.h>
 
-char* itoa(int, char*, int);
-char* itoaLong(uint64_t, char*, int);
 int memcmp(const void*, const void*, size_t);
 void* memcpy(void* __restrict, const void* __restrict, size_t);
 void* memmove(void*, const void*, size_t);

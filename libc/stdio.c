@@ -29,6 +29,68 @@ char putchar(char c)
   return c;
 }
 
+static void PrintDec(unsigned int value, unsigned int width, char* buffer, int* ptr)
+{
+  unsigned int nWidth = 1u;
+  unsigned int i = 9u;
+
+  while (value > i && i < UINT32_MAX)
+  {
+    nWidth++;
+    i *= 10u;
+    i += 9u;
+  }
+
+  int printed = 0;
+  while (nWidth + printed < width)
+  {
+    buffer[*ptr] = '0';
+    (*ptr)++;
+    printed++;
+  }
+
+  i = nWidth;
+  while (i > 0u)
+  {
+    unsigned int n = value / 10u;
+    int r = value % 10u;
+    buffer[*ptr+i-1u] = '0'+r;
+    i--;
+    value = n;
+  }
+
+  *ptr += nWidth;
+}
+
+static void PrintHex(unsigned int value, unsigned int width, char* buffer, int* ptr)
+{
+  int i = width;
+  if (i == 0) i = 8;
+
+  unsigned int nWidth = 1u;
+  unsigned int j = 0x0F;
+  while (value > j && j < UINT32_MAX)
+  {
+    nWidth++;
+    j *= 0x10;
+    j += 0x0F;
+  }
+
+  while (i > (int)nWidth)
+  {
+    buffer[*ptr] = '0';
+    (*ptr)++;
+    i--;
+  }
+
+  i = (int)nWidth;
+  while (i-- > 0)
+  {
+    buffer[*ptr] = "0123456789abcdef"[(value>>(i*4))&0xF];
+    (*ptr)++;
+  }
+}
+
 int vprintf(const char* __restrict fmt, va_list args)
 {
   char buffer[1024u] = {};
@@ -83,14 +145,8 @@ int vprintf(const char* __restrict fmt, va_list args)
       case 'd':
       {
         fmt++;
-        int value = va_arg(args, int);
-
-        /*
-         * NOTE(Isaac): The longest value an `int` can take would be -2147483647, which has 11 characters.
-         */
-        char valueBuffer[11u];
-        itoa(value, valueBuffer, 10);
-        EMIT(valueBuffer);
+        unsigned long value = va_arg(args, unsigned long);
+        PrintDec(value, 0, buffer, &bufferLength);
       } break;
 #if 0
       case 'f':
@@ -105,7 +161,7 @@ int vprintf(const char* __restrict fmt, va_list args)
         char valueBuffer[16u];
         EMIT(gcvt(value, 8, valueBuffer));
       } break;
-#endif
+
       case 'b':
       {
         fmt++;
@@ -120,20 +176,14 @@ int vprintf(const char* __restrict fmt, va_list args)
         EMIT("0b");
         EMIT(valueBuffer);
       } break;
-
+#endif
       case 'x':
       case 'X':
       {
         fmt++;
-        unsigned int value = va_arg(args, unsigned int);
-
-        /*
-         * NOTE(Isaac): In hex, the longest value an int can take is `-7FFFFFFF` so we need 9 characters
-         */
-        char valueBuffer[16u];
-        itoa(value, valueBuffer, 16);
+        unsigned long value = va_arg(args, unsigned long);
         EMIT("0x");
-        EMIT(valueBuffer);
+        PrintHex(value, 0, buffer, &bufferLength);
       } break;
 
       default:
