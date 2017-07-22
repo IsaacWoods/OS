@@ -15,8 +15,8 @@ BootPageDirectory:
   ; Bit 7 - PS (So the kernel page is 4MB)
   ; Bit 1 - RW (So the kernel page is read/write)
   ; Bit 0 - P  (So the kernel page is present)
-  dd 0x00000083                               ; This page is needed otherwise we crash after paging is enabled
-                                              ; because we can't fetch the next instruction. Okay to unmap later.
+  dd 0x00000083                               ; This page is needed otherwise we can't load the next instruction
+                                              ; after enabling paging. We can unmap it later tho.
   times (KERNEL_PAGE_NUMBER - 1) dd 0         ; These are the pages before the kernel
   dd 0x00000083                               ; This is the kernel's page
   times (1024 - KERNEL_PAGE_NUMBER - 1) dd 0  ; These are the pages after the kernel

@@ -22,11 +22,9 @@ void kmain(uint32_t magic, struct multiboot_info* bootInfo)
     KERNEL_PANIC("Incorrect bootloader magic: %x\n", magic);
   }
 
-  printf("Max uint32_t: (%u) (%x)\n", UINT32_MAX, UINT32_MAX);
-
   printf("Hello, World!\n");
   printf("Mem lower: %x\nMem upper: %x\n", bootInfo->mem_lower, bootInfo->mem_upper);
-  printf("End of kernel: %x\n", g_endKernel);
+  printf("End of kernel: %x\n", &g_endKernel);
   SetTimerFrequency(1000u);
   InitPlatform();
 

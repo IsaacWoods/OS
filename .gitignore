@@ -3,5 +3,7 @@ isodir
 *.o
 *.a
 *.kernel
+*.img
+*.bin
 *.iso
 *.swp
